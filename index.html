@@ -1,0 +1,107 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>3D_threejs</title>
+    <!-- three基础文件 -->
+    <script src="js/three.js"></script>
+    <!-- 续额外引入的three文件，调用时使用THREE.方法名 -->
+    <script src='node_modules/three/examples/js/loaders/GLTFLoader.js'></script>
+    <script src="node_modules/three/examples/js/controls/OrbitControls.js"></script>
+    <script src="node_modules/three/examples/js/loaders/SVGLoader.js"></script>
+    <style></style>
+</head>
+
+<body>
+    <canvas id="canvas" style="display: none;">你的浏览器不支持canvas</canvas>
+    <script>
+        // 创建一个场景
+        // 场景
+        const scene = new THREE.Scene();
+        // 相机类型：透视相机
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 2000);
+        // 构造器
+        const renderer = new THREE.WebGLRenderer();
+        // GLTF加载器：加载glb等格式模型
+        const loader = new THREE.GLTFLoader();
+        // 轨道控制器：使相机围绕目标进行轨道运动
+        console.log('renderer', renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // 环境光探针：照射在模型表面的光线颜色，参数颜色值
+        const light = new THREE.DirectionalLight(0xffffff, 3);
+        light.position.set(-10, -10, -10)
+        const lights = new THREE.DirectionalLight(0xffffff, 3);
+        lights.position.set(10, 10, 10)
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        // 设置环境的背景颜色
+        renderer.setClearColor(0x000000, 1);
+        // 生成canvas
+        let canvas = document.createElement("canvas");
+        let ctx = canvas.getContext('2d')
+        canvas.width = 50
+        canvas.height = 50
+        // 制作矩形
+        ctx.fillStyle = "skyblue";
+        ctx.fillRect(0, 0, 50, 50)
+        // 设置文字样式
+        ctx.fillStyle = "black";
+        ctx.font = 'normal 14px "黑体"'
+        ctx.fillText(`吸尘口`, 0, 20)
+        // 生成图片
+        let url = canvas.toDataURL('image/png');
+        // 选择glb文件，文件最好为线上文件，具体参考 https://threejs.org/docs/#manual/zh/introduction/How-to-run-things-locally
+        // 需要先用live server开启本地服务，对应本地服务调整端口
+        loader.load('http://127.0.0.1:5500/model/dustcollector.glb', function (gltf) {
+            // 成功时为环境添加moxing
+            gltf.scene.traverse(data => {
+                // 判断是否存在某个点
+                if (data.name === '吸尘口') {
+                    // 将图片构建到纹理中
+                    let geometry1 = new THREE.PlaneGeometry(2, 1.2)
+                    let material1 = new THREE.MeshBasicMaterial({
+                        // 将base64的url图片转换为贴图
+                        map: new THREE.TextureLoader().load(url),
+                        side: THREE.DoubleSide,
+                        opacity: 1,
+                    })
+                    // 创建
+                    let rect = new THREE.Mesh(geometry1, material1)
+                    // 偏移量：根据THREE.PlaneGeometry()参数值调整
+                    rect.position.set(data.position.x + 1, data.position.y + .6, data.position.z)
+                    // 向量axis
+                    var axis = new THREE.Vector3(0, 1, 0);
+                    // 绕axis轴旋转：取值 π * n / π / n
+                    rect.rotateOnAxis(axis, Math.PI * 1);
+                    // 构建
+                    // ps：canvas样式太丑了，先注释掉了
+                    // scene.add(rect)
+                }
+            })
+            scene.add(gltf.scene);
+        }, undefined, function (error) {
+            // 失败时在控制台打印错误内容
+            console.error(error);
+        });
+        // 启用或禁用相机缩放
+        controls.enableZoom = true;
+        // 调整摄像机位置
+        camera.position.set(-10, 30, 50);
+        // 将环境调整至摄像机的中央
+        camera.lookAt(scene.position);
+        // 为环境添加灯光 light lights为两道光源 需要可以继续增加
+        scene.add(light);
+        scene.add(lights);
+        // 渲染场景
+        animate = () => {
+            // 设置自动旋转相关参数
+            scene.rotation.y += 0.005;
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        };
+        // 调用函数
+        animate();
+    </script>
+</body>
+
+</html>
